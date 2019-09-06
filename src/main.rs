@@ -645,6 +645,7 @@ impl Config {
 
 fn main() -> Result<(), std::io::Error> {
     pretty_env_logger::init();
+    better_panic::install();
     let opts = Opt::from_args();
 
     match opts.cmd {
