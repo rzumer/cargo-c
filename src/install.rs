@@ -4,7 +4,6 @@ use structopt::clap::ArgMatches;
 use cargo::core::Workspace;
 
 use crate::build_targets::BuildTargets;
-use crate::target::Target;
 
 use anyhow::Context;
 
@@ -76,7 +75,6 @@ fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> anyhow::Result<u64> {
 
 pub fn cinstall(
     ws: &Workspace,
-    target: &Target,
     build_targets: BuildTargets,
     paths: InstallPaths,
 ) -> anyhow::Result<()> {
@@ -84,6 +82,7 @@ pub fn cinstall(
 
     let pkg = ws.current()?;
 
+    let target = &build_targets.target;
     let os = &target.os;
     let env = &target.env;
     let ver = pkg.version();

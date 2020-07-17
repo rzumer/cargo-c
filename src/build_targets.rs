@@ -10,6 +10,7 @@ pub struct BuildTargets {
     pub impl_lib: Option<PathBuf>,
     pub def: Option<PathBuf>,
     pub pc: PathBuf,
+    pub target: Target,
 }
 
 impl BuildTargets {
@@ -72,6 +73,7 @@ impl BuildTargets {
             shared_lib,
             impl_lib,
             def,
+            target: target.clone(),
         }
     }
 }

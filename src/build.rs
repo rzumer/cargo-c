@@ -70,7 +70,7 @@ fn build_pc_file(
 }
 
 fn patch_lib_kind_in_target(ws: &mut Workspace, libkinds: &[&str]) -> anyhow::Result<()> {
-    use cargo::core::LibKind::*;
+    use cargo::core::compiler::CrateType::*;
 
     let pkg = ws.current_mut()?;
     let manifest = pkg.manifest_mut();
@@ -80,7 +80,7 @@ fn patch_lib_kind_in_target(ws: &mut Workspace, libkinds: &[&str]) -> anyhow::Re
 
     for target in targets.iter_mut() {
         if target.is_lib() {
-            *target.kind_mut() = TargetKind::Lib(kinds.clone());
+            target.set_kind(TargetKind::Lib(kinds.clone()));
         }
     }
 
@@ -227,7 +227,16 @@ pub fn cbuild(
     config: &Config,
     args: &ArgMatches<'_>,
 ) -> anyhow::Result<(BuildTargets, InstallPaths)> {
-    let rustc_target = target::Target::new(args.target())?;
+    let targets = args.targets();
+    let target = match targets.len() {
+        0 => None,
+        1 => Some(targets[1].clone()),
+        _ => {
+            anyhow::bail!("Multiple targets not supported yet");
+        }
+    };
+
+    let rustc_target = target::Target::new(target.as_ref())?;
     let install_paths = InstallPaths::from_matches(args);
     let libkinds = args
         .values_of("library-type")
@@ -274,13 +283,6 @@ pub fn cbuild(
         ops::FilterRule::none(),
     );
 
-    compile_opts.export_dir = args.value_of_path("out-dir", config);
-    if compile_opts.export_dir.is_some() {
-        config
-            .cli_unstable()
-            .fail_if_stable_opt("--out-dir", 6790)?;
-    }
-
     let profiles = Profiles::new(
         ws.profiles(),
         config,
@@ -294,7 +296,7 @@ pub fn cbuild(
         .as_path_unlocked()
         .to_path_buf()
         .join(
-            args.target()
+            target
                 .map(|t| PathBuf::from(t))
                 .unwrap_or_else(|| PathBuf::from(".")),
         )
@@ -315,8 +317,8 @@ pub fn cbuild(
 
     let prev_hash = fingerprint(&build_targets)?;
 
-    let r = ops::compile(ws, &compile_opts)?;
-    assert_eq!(root_output, r.root_output);
+    // TODO: check the root_output
+    let _r = ops::compile(ws, &compile_opts)?;
 
     let cur_hash = fingerprint(&build_targets)?;
 
